@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS course (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(255) NOT NULL
+    );
+
+CREATE TABLE IF NOT EXISTS profile (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+    );
+
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    profile_id BIGINT NOT NULL,
+    FOREIGN KEY (profile_id) REFERENCES profile(id)
+    );
+
+CREATE TABLE IF NOT EXISTS topic (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) NOT NULL,
+    author_id BIGINT NOT NULL,
+    course_id BIGINT NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES users(id),
+    FOREIGN KEY (course_id) REFERENCES course(id)
+    );
+
+CREATE TABLE IF NOT EXISTS response (
+    id BIGSERIAL PRIMARY KEY,
+    message TEXT NOT NULL,
+    topic_id BIGINT NOT NULL,
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    author_id BIGINT NOT NULL,
+    solution BOOLEAN NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (topic_id) REFERENCES topic(id),
+    FOREIGN KEY (author_id) REFERENCES users(id)
+    );

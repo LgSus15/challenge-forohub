@@ -1,0 +1,236 @@
+@startuml
+' Ajustes de dimensiones y diseño para evitar que el diagrama se corte en el visor web
+scale max 4000 width
+scale max 4000 height
+left to right direction
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+package "com.catodev.onechallengeforum" {
+  class OneChallengeForumApplication {
+    + main(String[]) : void
+  }
+}
+
+package "com.catodev.onechallengeforum.config" {
+  class OpenApiConfig {
+    + customOpenAPI() : OpenAPI
+  }
+  class SecurityConfig {
+    + securityFilterChain(HttpSecurity, SecurityFilter) : SecurityFilterChain
+    + passwordEncoder() : PasswordEncoder
+    + authenticationManager(AuthenticationConfiguration) : AuthenticationManager
+  }
+  class SecurityFilter {
+    - tokenService : TokenService
+    - userRepository : UserRepository
+    # doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain) : void
+    - recoverToken(HttpServletRequest) : String
+  }
+}
+
+package "com.catodev.onechallengeforum.controller" {
+  class AuthController {
+    - authenticationService : AuthenticationService
+    + register(RegisterUserDto) : ResponseEntity<Void>
+    + login(LoginUserDto) : ResponseEntity<JwtTokenDto>
+  }
+  class TopicController {
+    - topicService : TopicService
+    + create(TopicCreateDto) : TopicResponseDto
+    + findAll(Pageable) : Page<TopicResponseDto>
+    + findById(Long) : TopicResponseDto
+    + update(Long, TopicUpdateDto) : TopicResponseDto
+    + delete(Long) : void
+  }
+}
+
+package "com.catodev.onechallengeforum.dto.auth" {
+  class JwtTokenDto <<record>> {
+    + token : String
+  }
+  class LoginUserDto <<record>> {
+    + email : String
+    + password : String
+  }
+  class RegisterUserDto <<record>> {
+    + name : String
+    + email : String
+    + password : String
+  }
+}
+
+package "com.catodev.onechallengeforum.dto.topic" {
+  class TopicCreateDto <<record>> {
+    + title : String
+    + message : String
+    + authorId : Long
+    + courseId : Long
+  }
+  class TopicResponseDto <<record>> {
+    + id : Long
+    + title : String
+    + message : String
+    + creationDate : LocalDateTime
+    + status : String
+    + authorId : Long
+    + authorName : String
+    + courseId : Long
+    + courseName : String
+  }
+  class TopicUpdateDto <<record>> {
+    + title : String
+    + message : String
+  }
+}
+
+package "com.catodev.onechallengeforum.exception" {
+  class DuplicateResourceException {
+  }
+  class ErrorResponse <<record>> {
+    + status : int
+    + message : String
+    + timestamp : LocalDateTime
+  }
+  class GlobalExceptionHandler {
+    + handleNotFound(ResourceNotFoundException)
+    + handleDuplicate(DuplicateResourceException)
+    + handleValidationErrors(MethodArgumentNotValidException)
+    + handleGenericError(Exception)
+  }
+  class ResourceNotFoundException {
+  }
+}
+
+package "com.catodev.onechallengeforum.mapper" {
+  interface TopicMapper {
+    + toDTO(Topic) : TopicResponseDto
+    + toEntity(TopicCreateDto, User, Course) : Topic
+  }
+}
+
+package "com.catodev.onechallengeforum.model" {
+  class Course {
+    - id : Long
+    - name : String
+    - category : String
+  }
+  class Profile {
+    - id : Long
+    - name : String
+  }
+  class Response {
+    - id : Long
+    - message : String
+    - topic : Topic
+    - creationDate : LocalDateTime
+    - author : User
+    - solution : Boolean
+  }
+  class Topic {
+    - id : Long
+    - title : String
+    - message : String
+    - creationDate : LocalDateTime
+    - status : String
+    - author : User
+    - course : Course
+  }
+  class User {
+    - id : Long
+    - name : String
+    - email : String
+    - password : String
+    - profile : Profile
+    + getAuthorities() : Collection<? extends GrantedAuthority>
+    + getUsername() : String
+    + isAccountNonExpired() : boolean
+    + isAccountNonLocked() : boolean
+    + isCredentialsNonExpired() : boolean
+    + isEnabled() : boolean
+  }
+}
+
+package "com.catodev.onechallengeforum.repository" {
+  interface CourseRepository {
+  }
+  interface ProfileRepository {
+    + findByName(String) : Optional<Profile>
+  }
+  interface TopicRepository {
+    + existsByTitleAndCourseId(String, Long) : boolean
+    + findByStatus(String, Pageable) : Page<Topic>
+  }
+  interface UserRepository {
+    + findByEmail(String) : Optional<User>
+    + existsByEmail(String) : boolean
+  }
+}
+
+package "com.catodev.onechallengeforum.service.auth" {
+  class AuthenticationService {
+    - userRepository : UserRepository
+    - profileRepository : ProfileRepository
+    - passwordEncoder : PasswordEncoder
+    - authenticationManager : AuthenticationManager
+    - tokenService : TokenService
+    + register(RegisterUserDto) : void
+    + login(LoginUserDto) : JwtTokenDto
+  }
+  class TokenService {
+    - apiSecret : String
+    + generateToken(User) : String
+    + getSubject(String) : String
+  }
+  class UserDetailsServiceImpl {
+    - userRepository : UserRepository
+    + loadUserByUsername(String) : UserDetails
+  }
+}
+
+package "com.catodev.onechallengeforum.service.topic" {
+  interface TopicService {
+    + create(TopicCreateDto) : TopicResponseDto
+    + findAll(Pageable) : Page<TopicResponseDto>
+    + findById(Long) : TopicResponseDto
+    + update(Long, TopicUpdateDto) : TopicResponseDto
+    + delete(Long) : void
+  }
+  class TopicServiceImpl {
+    - topicRepository : TopicRepository
+    - userRepository : UserRepository
+    - courseRepository : CourseRepository
+    - topicMapper : TopicMapper
+    + create(TopicCreateDto) : TopicResponseDto
+    + findAll(Pageable) : Page<TopicResponseDto>
+    + findById(Long) : TopicResponseDto
+    + update(Long, TopicUpdateDto) : TopicResponseDto
+    + delete(Long) : void
+  }
+}
+
+' Relaciones
+SecurityFilter --> TokenService : uses
+SecurityFilter --> UserRepository : uses
+AuthController --> AuthenticationService : uses
+TopicController --> TopicService : uses
+AuthenticationService --> UserRepository : uses
+AuthenticationService --> ProfileRepository : uses
+AuthenticationService --> TokenService : uses
+UserDetailsServiceImpl ..|> UserDetailsService
+UserDetailsServiceImpl --> UserRepository : uses
+TopicServiceImpl ..|> TopicService
+TopicServiceImpl --> TopicRepository : uses
+TopicServiceImpl --> UserRepository : uses
+TopicServiceImpl --> CourseRepository : uses
+TopicServiceImpl --> TopicMapper : uses
+
+User --> Profile
+Topic --> User : author
+Topic --> Course
+Response --> Topic
+Response --> User : author
+
+DuplicateResourceException --|> RuntimeException
+ResourceNotFoundException --|> RuntimeException
+@enduml

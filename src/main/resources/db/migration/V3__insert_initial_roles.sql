@@ -1,0 +1,3 @@
+INSERT INTO profiles (name) VALUES ('ROLE_ADMIN');
+INSERT INTO profiles (name) VALUES ('ROLE_STUDENT');
+INSERT INTO profiles (name) VALUES ('ROLE_TEACHER');
